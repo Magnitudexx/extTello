@@ -11,7 +11,7 @@ Self flying drone for enemy detection
 - [x] Connect to Drone wifi
 - [ ] Basic flight capabilites
     - [x] Test forward, backward, left,right
-    - [ ] Test rotation clockwise and conter-clockwise
+    - [x] Test rotation clockwise and conter-clockwise
     - [ ] Test go functions
     - [x] Test start and go
     - [ ] Test curve function
