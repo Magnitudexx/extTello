@@ -12,7 +12,7 @@ Self flying drone for enemy detection
 - [ ] Basic flight capabilites
     - [x] Test forward, backward, left,right
     - [x] Test rotation clockwise and conter-clockwise
-    - [ ] Test go functions
+    - [x] Test go functions
     - [x] Test start and go
     - [ ] Test curve function
 - [ ] Search pattern
