@@ -3,6 +3,9 @@ Self flying drone for enemy detection
 
 ## Documentation 
 [Robot Documentation](https://djitellopy.readthedocs.io/en/latest/tello/)
+
+### Problems 
+ - `move_x` functions does not work
 ## TODO
 
 - [x] Connect to Drone wifi
