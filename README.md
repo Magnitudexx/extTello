@@ -9,12 +9,13 @@ Self flying drone for enemy detection
 ## TODO
 
 - [x] Connect to Drone wifi
-- [ ] Basic flight capabilites
+- [x] Basic flight capabilites
     - [x] Test forward, backward, left,right
     - [x] Test rotation clockwise and conter-clockwise
     - [x] Test go functions
     - [x] Test start and go
-    - [ ] Test curve function
+    - [x] Test curve function
+        - weird imu problem
 - [ ] Search pattern
 - [ ] Remember position from origin
 - [ ] Track target
