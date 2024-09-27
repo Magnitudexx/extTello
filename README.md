@@ -5,9 +5,9 @@ Self flying drone for enemy detection
 [Robot Documentation](https://djitellopy.readthedocs.io/en/latest/tello/)
 ## TODO
 
-- [ ] Connect to Drone wifi
+- [x] Connect to Drone wifi
 - [ ] Basic flight capabilites
-    - [ ] Test forward, backward, left,right
+    - [x] Test forward, backward, left,right
     - [ ] Test rotation clockwise and conter-clockwise
     - [ ] Test go functions
     - [x] Test start and go
