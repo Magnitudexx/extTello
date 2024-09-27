@@ -10,6 +10,7 @@ Self flying drone for enemy detection
     - [ ] Test forward, backward, left,right
     - [ ] Test rotation clockwise and conter-clockwise
     - [ ] Test go functions
+    - [x] Test start and go
     - [ ] Test curve function
 - [ ] Search pattern
 - [ ] Remember position from origin
