@@ -6,6 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "djitellopy<=2.4.0",
+        "numpy",
     ],
     author="Philip Lundström",
     author_email="philip.lundstrom@live.se",
