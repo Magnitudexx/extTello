@@ -1,3 +1,4 @@
+import time
 from djitellopy import Tello
 import numpy as np
 import math
@@ -35,11 +36,11 @@ class extTello(Tello):
 
 
     def travel_path(self, time_step=0.1):
-        if self.path == None or self.speed_array == None:
+        if self.path is None or self.speed_array is None:
             print("no path or speed profile available")
             return
 
-
+        print(len(self.path))
         for i in range(1, len(self.path)):
             next_pos = self.path[i]
             current_pos = self.state['pos']
@@ -58,22 +59,23 @@ class extTello(Tello):
 
         # Move the robot forward at the current speed
             current_speed = self.speed_array[i]
-            x_speed = current_speed * math.cos(self.state['heading'])
-            y_speed = current_speed * math.sin(self.state['heading'])
+            x_speed = int(current_speed * math.cos(self.state['heading']))
+            y_speed = int(current_speed * math.sin(self.state['heading']))
             self.send_rc_control(x_speed,y_speed,0,0)
+            print("debug")
             self.state['pos'][0] += x_speed * time_step
             self.state['pos'][1] += y_speed * time_step
-        pass
-    
+            time.sleep(time_step) 
 
 def interpolate_points(start, end, num):
     x_values = np.linspace(start, end, num)
     #y_values = np.linspace(start, end ,num)
     #return np.vstack((x_values, y_values)).T
-    return np.vstack(x_values).T
+    return np.vstack(x_values)
 
 def calculate_heading(current_pos, next_pos):
     """Calculates the heading angle (in radians) between the current and next positions."""
     delta_x = next_pos[0] - current_pos[0]
-    delta_y = next_pos[1] - current_pos[1]
+    #delta_y = next_pos[1] - current_pos[1]
+    delta_y = 0
     return math.atan2(delta_y, delta_x)
