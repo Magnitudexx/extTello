@@ -6,76 +6,51 @@ import math
 class extTello(Tello):
     def __init__(self):
         super().__init__()
-        self.x = 0
-        self.path = None
-        self.time_array = None
-        self.speed_array = None
         self.state = {
-            "pos" : [0 ,0 , 0],
-            "heading" : 0,
+            "pos" : [0.0, 0.0, 0.0],
+            "heading" : [0.0, 0.0],
         }
 
-    def path_planner(self, end):
-        self.path = interpolate_points(self.x, end, 10) 
 
-    def speed_profile(self,acceleration, deceleration, max_speed, total_time, time_step=0.1):
-        self.time_array = np.arange(0, total_time, time_step)
-        self.speed_array = np.zeros_like(self.time_array)
+    def __calc_speed_profile(self,dist,acc,max_v=50.0):
+            # Time to reach max speed
+        time_to_max_v = float(max_v / acc)
+        # dist to reach max speed and to decelerate
+        dist_acc_dec = 0.5 * acc * time_to_max_v ** 2
+        
+        if dist < 2 * dist_acc_dec:
+            # Short dist case: No constant speed, just accelerate then decelerate
+            time_accel = float(np.sqrt(dist / acc))
+            return [float(acc*t) for t in np.arange(0, time_accel, 0.1)] + \
+                   [float(max_v - acc * t) for t in np.arange(time_accel, 2 * time_accel, 0.1)]
+        else:
+            # Long dist case: Accelerate, then maintain speed, then decelerate
+            return [float(acc*t) for t in np.arange(0, time_to_max_v, 0.1)] + \
+                   [max_v for t in np.arange(time_to_max_v, dist / max_v, 0.1)] + \
+                   [float(max_v - acc * (t - dist / max_v)) for t in np.arange(dist / max_v, time_to_max_v + dist / max_v, 0.1)]
 
-        # Phase 1: Acceleration
-        for i in range(1, len(self.time_array)):
-            if self.speed_array[i - 1] < max_speed:
-                self.speed_array[i] = min(max_speed, self.speed_array[i - 1] + acceleration * time_step)
-            else:
-                self.speed_array[i] = max_speed
-
-        # Phase 2: Braking
-        for i in range(1, len(self.time_array)):
-            if self.time_array[i] > total_time / 2:  # Start braking after half the total time
-                self.speed_array[i] = max(0, self.speed_array[i - 1] - deceleration * time_step)
 
 
-    def travel_path(self, time_step=0.1):
-        if self.path is None or self.speed_array is None:
-            print("no path or speed profile available")
-            return
+    def travel_path(self, wps, max_speed, acc):
+        for i in range(len(wps) - 1):
+            start = wps[i]
+            end = wps[i + 1]
+            
+            # Compute distance and direction to next waypoint
+            dist = self.__distance(start, end)
+            dir_x, dir_y, dir_z = (end[0] - start[0]) / dist, (end[1] - start[1]) / dist, (end[2] - start[2]) / dist
+            
+            # Get speed profile for this segment
+            speed_profile = self.__calc_speed_profile(float(dist), acc, max_speed)
+            print(speed_profile) 
+            # Move self along speed profile
+            for speed in speed_profile:
+                self.send_rc_control(int(speed * dir_x), int(speed * dir_y), int(speed * dir_z), 0)
+                time.sleep(0.1)
+            
+            # Stop between wps to stabilize
+            self.send_rc_control(0, 0, 0, 0)
+            time.sleep(0.5)
 
-        print(len(self.path))
-        for i in range(1, len(self.path)):
-            next_pos = self.path[i]
-            current_pos = self.state['pos']
-
-        # Calculate the heading angle needed to go from current_pos to next_pos
-            self.state['heading'] = calculate_heading(current_pos, next_pos)
-
-        # Calculate the angle error (difference between current heading and desired heading)
-        #heading_error = desired_heading - robot_state['heading']
-
-        # Update the robot's steering by adjusting its heading towards the target
-        #if abs(heading_error) > 0.1:  # Threshold to prevent small fluctuations
-            # Simple proportional controller for turning
-            #steering_adjustment = heading_error * 0.5  # Proportional gain
-            #robot_state['heading'] += steering_adjustment * time_step
-
-        # Move the robot forward at the current speed
-            current_speed = self.speed_array[i]
-            x_speed = int(current_speed * math.cos(self.state['heading']))
-            y_speed = int(current_speed * math.sin(self.state['heading']))
-            self.send_rc_control(x_speed,y_speed,0,0)
-            print("debug")
-            self.state['pos'][0] += x_speed * time_step
-            self.state['pos'][1] += y_speed * time_step
-            time.sleep(time_step) 
-
-def interpolate_points(start, end, num):
-    x_values = np.linspace(start, end, num)
-    #y_values = np.linspace(start, end ,num)
-    #return np.vstack((x_values, y_values)).T
-    return np.vstack(x_values)
-
-def calculate_heading(current_pos, next_pos):
-    """Calculates the heading angle (in radians) between the current and next positions."""
-    delta_x = next_pos[0] - current_pos[0]
-    #delta_y = next_pos[1] - current_pos[1]
-    delta_y = 0
-    return math.atan2(delta_y, delta_x)
+    def __distance(self, point1, point2):
+        return np.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2 + (point1[2] - point2[2]) ** 2)
