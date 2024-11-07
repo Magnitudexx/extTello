@@ -18,11 +18,12 @@ class extTello(Tello):
         # dist to reach max speed and to decelerate
         dist_acc_dec = 0.5 * acc * time_to_max_v ** 2
         
-        if dist < 2 * dist_acc_dec:
+        if dist < (2 * dist_acc_dec):
             # Short dist case: No constant speed, just accelerate then decelerate
             time_accel = float(np.sqrt(dist / acc))
+            max_s = acc * time_accel;
             return [float(acc*t) for t in np.arange(0, time_accel, 0.1)] + \
-                   [float(max_v - acc * t) for t in np.arange(time_accel, 2 * time_accel, 0.1)]
+                   [float(max_s  - acc * t) for t in np.arange(0, time_accel, 0.1)]
         else:
             # Long dist case: Accelerate, then maintain speed, then decelerate
             return [float(acc*t) for t in np.arange(0, time_to_max_v, 0.1)] + \
@@ -50,7 +51,7 @@ class extTello(Tello):
             
             # Stop between wps to stabilize
             self.send_rc_control(0, 0, 0, 0)
-            time.sleep(0.5)
+            time.sleep(2)
 
     def __distance(self, point1, point2):
         return np.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2 + (point1[2] - point2[2]) ** 2)
