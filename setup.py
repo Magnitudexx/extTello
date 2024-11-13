@@ -5,7 +5,7 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
-        "djitellopy<=2.4.0",
+        "djitellopy<=2.5.0",
         "numpy",
     ],
     author="Philip Lundström",
