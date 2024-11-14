@@ -27,8 +27,8 @@ class extTello(Tello):
 
             dt = (time.time() - lt)
             logging.debug(f"Delta time : {dt}")
-            self.state['x'] = self.state['x'] +(10 * vx *dt)
-            self.state['y'] = self.state['y'] +(10 * vy *dt)
+            self.state['x'] = self.state['x'] +(10 * vy *dt)
+            self.state['y'] = self.state['y'] +(10 * vx *dt)
             self.state['z'] = self.get_distance_tof()
 
             logging.debug(f"State : {self.state}")
@@ -73,8 +73,10 @@ class extTello(Tello):
         self.takeoff()
         self.running = True
         self.StateUpdaterThread.start()
-        time.sleep(5)
-
+        time.sleep(3)
+        while self.state['z'] < 90:
+            self.send_rc_control(0,0,10,0)
+        time.sleep(1)
     def __auto_controller(self,func: Callable[[], Dict]):
         while self.running:
             pos = self.state
@@ -86,7 +88,7 @@ class extTello(Tello):
                 self.send_rc_control(0,0,0,0)
             else:
                 dir_x, dir_y, dir_z = (target['x'] - pos['x']) / dist, (target['y'] - pos['y']) / dist, (target['z'] - pos['z']) / dist
-                speed = 10
+                speed = 20
 
                 self.send_rc_control(int(speed * dir_x), int(speed * dir_y), int(speed * dir_z), 0)
                 time.sleep(0.01)

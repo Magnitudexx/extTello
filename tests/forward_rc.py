@@ -13,9 +13,8 @@ drone.connect()
 drone.takeoff_with_state()
 time.sleep(2)
 try:
-    drone.start_auto_controller(lambda: {'x': 0, 'y': 30})
     while True:
-        continue
+        drone.send_rc_control(0, 20, 0, 0)
 
 finally:
         drone.stop()
