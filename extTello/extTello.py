@@ -35,6 +35,7 @@ class extTello(Tello):
 
             lt = time.time()
             time.sleep(0.01)
+            time.sleep(0.05)
 
 
 
@@ -75,7 +76,9 @@ class extTello(Tello):
         self.StateUpdaterThread.start()
         time.sleep(3)
         while self.state['z'] < 90:
+        while self.state['z'] < 110:
             self.send_rc_control(0,0,10,0)
+            time.sleep(0.05)
         time.sleep(1)
     def __auto_controller(self,func: Callable[[], Dict]):
         while self.running:
