@@ -14,7 +14,8 @@ drone.takeoff_with_state()
 time.sleep(2)
 try:
     while True:
-        drone.send_rc_control(0, 20, 0, 0)
+        drone.send_rc_control(20, 0, 0, 0)
+        time.sleep(0.05)
 
 finally:
         drone.stop()

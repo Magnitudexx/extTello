@@ -20,21 +20,20 @@ class extTello(Tello):
         lt = time.time()
 
         while self.running:
-            vx = self.get_speed_x();
-            vy = self.get_speed_y();
+            vy = self.get_speed_x();
+            vx = self.get_speed_y();
             vz = self.get_speed_z();
             logging.debug(f"Speeds - vx: {vx}, vy: {vy}, vz: {vz}")
 
             dt = (time.time() - lt)
             logging.debug(f"Delta time : {dt}")
-            self.state['x'] = self.state['x'] +(10 * vy *dt)
-            self.state['y'] = self.state['y'] +(10 * vx *dt)
+            self.state['x'] = self.state['x'] +(10 * vx *dt)
+            self.state['y'] = self.state['y'] +(10 * vy *dt)
             self.state['z'] = self.get_distance_tof()
 
             logging.debug(f"State : {self.state}")
 
             lt = time.time()
-            time.sleep(0.01)
             time.sleep(0.05)
 
 
@@ -75,10 +74,10 @@ class extTello(Tello):
         self.running = True
         self.StateUpdaterThread.start()
         time.sleep(3)
-        while self.state['z'] < 90:
         while self.state['z'] < 110:
             self.send_rc_control(0,0,10,0)
             time.sleep(0.05)
+        self.send_rc_control(0,0,0,0)
         time.sleep(1)
     def __auto_controller(self,func: Callable[[], Dict]):
         while self.running:
@@ -87,14 +86,19 @@ class extTello(Tello):
             if 'z' not in target:
                 target['z'] = pos['z']
             dist = self.__distance(pos, target)
-            if dist == 0:
+            if dist <= 10:
                 self.send_rc_control(0,0,0,0)
+                logging.debug(f"Dist = {dist}")
+                time.sleep(0.05)
             else:
-                dir_x, dir_y, dir_z = (target['x'] - pos['x']) / dist, (target['y'] - pos['y']) / dist, (target['z'] - pos['z']) / dist
-                speed = 20
+                dir_x = (target['x'] - pos['x']) / dist
+                dir_y = (target['y'] - pos['y']) / dist
+                speed = 30
+                speeds = [int(x) if x >= 20 else 0 for x in [30*dir_x,30*dir_y]]
+                logging.debug(f"RC-speeds = {speeds}")
 
-                self.send_rc_control(int(speed * dir_x), int(speed * dir_y), int(speed * dir_z), 0)
-                time.sleep(0.01)
+                self.send_rc_control(speeds[0], speeds[1], 0, 0)
+                time.sleep(0.05)
 
     def __calc_speed_profile(self,dist,acc,max_v=50.0):
             # Time to reach max speed
