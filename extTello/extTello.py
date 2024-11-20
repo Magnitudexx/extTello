@@ -15,6 +15,7 @@ class extTello(Tello):
         self.heading = theta
         self.StateUpdaterThread = threading.Thread(target=self.StateUpdater)
         self.auto_controller_thread = None
+        self.lock = threading.Lock()
 
     def StateUpdater(self):
         lt = time.time()
@@ -27,9 +28,10 @@ class extTello(Tello):
 
             dt = (time.time() - lt)
             logging.debug(f"Delta time : {dt}")
-            self.state['x'] = self.state['x'] +(10 * vx *dt)
-            self.state['y'] = self.state['y'] +(10 * vy *dt)
-            self.state['z'] = self.get_distance_tof()
+            with self.lock:
+                self.state['x'] = self.state['x'] +(10 * vx *dt)
+                self.state['y'] = self.state['y'] +(10 * vy *dt)
+                self.state['z'] = self.get_distance_tof()
 
             logging.debug(f"State : {self.state}")
 
@@ -81,7 +83,8 @@ class extTello(Tello):
         time.sleep(1)
     def __auto_controller(self,func: Callable[[], Dict]):
         while self.running:
-            pos = self.state
+            with self.lock:
+                pos = self.state
             target = func()
             if 'z' not in target:
                 target['z'] = pos['z']
@@ -93,7 +96,6 @@ class extTello(Tello):
             else:
                 dir_x = (target['x'] - pos['x']) / dist
                 dir_y = (target['y'] - pos['y']) / dist
-                speed = 30
                 speeds = [int(x) if x >= 20 else 0 for x in [30*dir_x,30*dir_y]]
                 logging.debug(f"RC-speeds = {speeds}")
 
