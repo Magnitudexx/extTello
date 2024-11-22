@@ -16,6 +16,7 @@ class extTello(Tello):
         self.StateUpdaterThread = threading.Thread(target=self.StateUpdater)
         self.auto_controller_thread = None
         self.lock = threading.Lock()
+        self.frame = None
 
     def StateUpdater(self):
         lt = time.time()
@@ -60,7 +61,7 @@ class extTello(Tello):
             # Stop between wps to stabilize
             self.send_rc_control(0, 0, 0, 0)
             time.sleep(2)
-    def start_auto_controller(self, func: Callable[[], Dict]):
+    def start_auto_controller(self, func: Callable[['extTello'], Dict | None]):
         self.auto_controller_thread = threading.Thread(target=self.__auto_controller, args=(func,))
         self.auto_controller_thread.start()
 
@@ -81,11 +82,13 @@ class extTello(Tello):
             time.sleep(0.05)
         self.send_rc_control(0,0,0,0)
         time.sleep(1)
-    def __auto_controller(self,func: Callable[[], Dict]):
+    def __auto_controller(self,func: Callable[['extTello'], Dict | None]):
         while self.running:
             with self.lock:
                 pos = self.state
-            target = func()
+            target = func(self)
+            if target is None:
+                continue
             if 'z' not in target:
                 target['z'] = pos['z']
             dist = self.__distance(pos, target)
