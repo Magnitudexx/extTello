@@ -11,11 +11,8 @@ drone = extTello()
 
 drone.connect()
 drone.takeoff_with_state()
-time.sleep(2)
 try:
-    while True:
-        drone.send_rc_control(20, 0, 0, 0)
-        time.sleep(0.05)
+    drone.go_xyz_speed(0, 30, 0, 20)
 
 finally:
         drone.stop()

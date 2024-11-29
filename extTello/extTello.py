@@ -86,7 +86,11 @@ class extTello(Tello):
         self.takeoff()
         self.running = True
         self.StateUpdaterThread.start()
-        time.sleep(3)
+        time.sleep(1)
+        self.move_forward(20)
+        time.sleep(1)
+        self.move_up(20)
+        time.sleep(1)
         """
         while self.state['z'] < 110:
             self.send_rc_control(0,0,10,0)
@@ -100,28 +104,25 @@ class extTello(Tello):
 
     def __auto_controller(self):
         func = getattr(self, 'object_identifier', lambda: None)
+        lim = 20
         while self.running:
-            with self.lock:
-                pos = self.state
             target = func()
             if target is None:
                 continue
             #if 'z' not in target:
                 #target['z'] = pos['z']
+            with self.lock:
+                pos = self.state
             dist = self.__distance(pos, target)
             logging.debug(f"Dist = {dist}")
-            if dist <= 5:
-                self.send_rc_control(0,0,0,0)
-                time.sleep(0.05)
-            else:
-                dir_x = (target['x'] - pos['x']) / dist
-                dir_y = (target['y'] - pos['y']) / dist
-                speed = 15
-                speeds = [int(x) if abs(x) >= 10 else 0 for x in [speed*dir_x, speed*dir_y]]
-                logging.debug(f"RC-speeds = {speeds}")
+            dx = int(target['x'] - pos['x']) if  int(target['x'] - pos['x'])  >= lim else 0
+            dy = int(target['y'] - pos['y']) if  int(target['y'] - pos['y'])  >= lim else 0
 
-                self.send_rc_control(speeds[0], speeds[1], 0, 0)
-                time.sleep(0.05)
+            if abs(dx) >= lim or abs(dy) >= lim:
+                self.go_xyz_speed(dy, dx, 0, 20)
+            else:
+                self.send_rc_control(0, 0, 0, 0)
+
 
     def __calc_speed_profile(self,dist,acc,max_v=50.0):
             # Time to reach max speed
