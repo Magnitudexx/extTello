@@ -25,9 +25,10 @@ class extTello(Tello):
         lt = time.time()
 
         while self.running:
-            vx = self.get_speed_x();
-            vy = self.get_speed_y();
-            vz = self.get_speed_z();
+            with self.lock:
+                vx = self.get_speed_x();
+                vy = self.get_speed_y();
+                vz = self.get_speed_z();
             logging.debug(f"Speeds - vx: {vx}, vy: {vy}, vz: {vz}")
 
             dt = (time.time() - lt)
@@ -108,7 +109,6 @@ class extTello(Tello):
     def __auto_controller(self):
         func = getattr(self, 'object_identifier', lambda: None)
         lim = 20
-        last_command = (0, 0, 0, 0)
         while self.running:
             target = func()
             if target is None:
@@ -121,32 +121,16 @@ class extTello(Tello):
             logging.debug(f"Dist = {dist}")
             #dx = int(target['x'] - pos['x']) if  int(target['x'] - pos['x'])  >= lim else 0
             #dy = int(target['y'] - pos['y']) if  int(target['y'] - pos['y'])  >= lim else 0
-            dx = int(target['x']) if  int(target['x'])  >= lim else 0
-            dy = int(target['y']) if  int(target['y'])  >= lim else 0
+            dx = 20 if  int(target['x'])  >= lim else 0
+            dy = 20 if  int(target['y'])  >= lim else 0
             logging.debug(f"dx, dy = {dx}, {dy}")
 
                     # If close enough to the target, hold position
-            if dist < lim:
+            if dist <= lim:
                 logging.debug("Target reached. Holding position.")
-                dx, dy = 0, 0  # Explicitly reset dx and dy
                 self.send_rc_control(0, 0, 0, 0)
-                last_command = (0, 0, 0, 0)  # Update last command
-                continue
-
-            # Construct the movement command
-            command = (dx, dy, 0, 20)
-
-            # Check if the command is different from the last sent
-            if command != last_command:
-                try:
-                    logging.debug(f"Sending command: {command}")
-                    self.go_xyz_speed(*command)  # Move to the target
-                    last_command = command
-                except Exception as e:
-                    logging.error(f"go_xyz_speed failed: {e}")
-                    # On failure, hold position
-                    self.send_rc_control(0, 0, 0, 0)
-                    dx, dy = 0, 0  # Reset commands on failure
+            else:
+                self.send_rc_control(dx, dy, 0, 0)
 
             # Add a small delay to reduce loop frequency
             time.sleep(0.1)
