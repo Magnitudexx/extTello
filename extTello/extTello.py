@@ -25,8 +25,8 @@ class extTello(Tello):
         lt = time.time()
 
         while self.running:
-            vy = self.get_speed_x();
-            vx = self.get_speed_y();
+            vx = self.get_speed_x();
+            vy = self.get_speed_y();
             vz = self.get_speed_z();
             logging.debug(f"Speeds - vx: {vx}, vy: {vy}, vz: {vz}")
 
@@ -40,7 +40,7 @@ class extTello(Tello):
             logging.debug(f"State : {self.state}")
 
             lt = time.time()
-            time.sleep(0.05)
+            time.sleep(0.1)
 
 
 
@@ -87,10 +87,13 @@ class extTello(Tello):
         self.running = True
         self.StateUpdaterThread.start()
         time.sleep(1)
-        self.move_forward(20)
-        time.sleep(1)
-        self.move_up(20)
-        time.sleep(1)
+        try:
+            self.move_forward(20)
+            time.sleep(1)
+            self.move_up(20)
+            time.sleep(1)
+        except:
+            return
         """
         while self.state['z'] < 110:
             self.send_rc_control(0,0,10,0)
@@ -105,23 +108,48 @@ class extTello(Tello):
     def __auto_controller(self):
         func = getattr(self, 'object_identifier', lambda: None)
         lim = 20
+        last_command = (0, 0, 0, 0)
         while self.running:
             target = func()
             if target is None:
                 continue
+            logging.debug(f"Target = {target}")
             #if 'z' not in target:
                 #target['z'] = pos['z']
-            with self.lock:
-                pos = self.state
+            pos = self.state
             dist = self.__distance(pos, target)
             logging.debug(f"Dist = {dist}")
-            dx = int(target['x'] - pos['x']) if  int(target['x'] - pos['x'])  >= lim else 0
-            dy = int(target['y'] - pos['y']) if  int(target['y'] - pos['y'])  >= lim else 0
+            #dx = int(target['x'] - pos['x']) if  int(target['x'] - pos['x'])  >= lim else 0
+            #dy = int(target['y'] - pos['y']) if  int(target['y'] - pos['y'])  >= lim else 0
+            dx = int(target['x']) if  int(target['x'])  >= lim else 0
+            dy = int(target['y']) if  int(target['y'])  >= lim else 0
+            logging.debug(f"dx, dy = {dx}, {dy}")
 
-            if abs(dx) >= lim or abs(dy) >= lim:
-                self.go_xyz_speed(dy, dx, 0, 20)
-            else:
+                    # If close enough to the target, hold position
+            if dist < lim:
+                logging.debug("Target reached. Holding position.")
+                dx, dy = 0, 0  # Explicitly reset dx and dy
                 self.send_rc_control(0, 0, 0, 0)
+                last_command = (0, 0, 0, 0)  # Update last command
+                continue
+
+            # Construct the movement command
+            command = (dx, dy, 0, 20)
+
+            # Check if the command is different from the last sent
+            if command != last_command:
+                try:
+                    logging.debug(f"Sending command: {command}")
+                    self.go_xyz_speed(*command)  # Move to the target
+                    last_command = command
+                except Exception as e:
+                    logging.error(f"go_xyz_speed failed: {e}")
+                    # On failure, hold position
+                    self.send_rc_control(0, 0, 0, 0)
+                    dx, dy = 0, 0  # Reset commands on failure
+
+            # Add a small delay to reduce loop frequency
+            time.sleep(0.1)
 
 
     def __calc_speed_profile(self,dist,acc,max_v=50.0):
