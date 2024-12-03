@@ -7,6 +7,7 @@ import threading
 import time
 from typing import Callable, Dict
 from types import MethodType
+from .ros_publisher_node import ROSPublisherNode
 
 class extTello(Tello):
     def __init__(self, x=0.0, y=0.0, z=0.0, theta=0.0):
@@ -23,6 +24,16 @@ class extTello(Tello):
         self.vx = 0
         self.vy = 0
         self.vz = 0
+        self.ros_Node = None
+
+    def init_ros_publisher(self, topic_name="tello_status"):
+        self.ros_node = ROSPublisherNode(topic_name)
+
+    def publish_data(self, message):
+        if self.ros_node:
+            self.ros_node.publish(message)
+        else:
+            print("ROS publisher not initialized.")
 
     def StateUpdater(self):
         lt = time.time()
