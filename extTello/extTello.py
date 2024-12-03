@@ -20,22 +20,25 @@ class extTello(Tello):
         self.frame = None
         self.mask = None
         self.have_identifier = False
+        self.vx = 0
+        self.vy = 0
+        self.vz = 0
 
     def StateUpdater(self):
         lt = time.time()
 
         while self.running:
             with self.lock:
-                vx = self.get_speed_x();
-                vy = self.get_speed_y();
-                vz = self.get_speed_z();
-            logging.debug(f"Speeds - vx: {vx}, vy: {vy}, vz: {vz}")
+                self.vx = self.get_speed_x();
+                self.vy = self.get_speed_y();
+                self.vz = self.get_speed_z();
+            logging.debug(f"Speeds - vx: {self.vx}, vy: {self.vy}, vz: {self.vz}")
 
             dt = (time.time() - lt)
             logging.debug(f"Delta time : {dt}")
             with self.lock:
-                self.state['x'] = self.state['x'] +(10 * vx *dt)
-                self.state['y'] = self.state['y'] +(10 * vy *dt)
+                self.state['x'] = self.state['x'] +(10 * self.vx *dt)
+                self.state['y'] = self.state['y'] +(10 * self.vy *dt)
                 self.state['z'] = self.get_distance_tof()
 
             logging.debug(f"State : {self.state}")
@@ -48,6 +51,7 @@ class extTello(Tello):
 
     def travel_path(self, wps, max_speed, acc):
         idn = getattr(self, "object_identifier", lambda: None)
+        lt = time.time()
         for i in range(len(wps) - 1):
             start = wps[i]
             end = wps[i + 1]
@@ -65,8 +69,15 @@ class extTello(Tello):
                     self.send_rc_control(0,0,0,0)
                     self.start_auto_controller()
                     return
-                self.send_rc_control(int(speed * dir_x), int(speed * dir_y), 0, 0)
-                time.sleep(0.05)
+                vx = int(speed*dir_x)
+                vy = int(speed*dir_y)
+                self.send_rc_control(vy, vx, 0, 0)
+                dt = time.time() - lt
+                with self.lock:
+                    self.state['x'] = self.state['x'] + ((vx *dt) if self.vx == 0 else 0)
+                    self.state['y'] = self.state['y'] + ((vy *dt) if self.vy == 0 else 0)
+                lt = time.time()
+                time.sleep(0.1)
             
             # Stop between wps to stabilize
             self.send_rc_control(0, 0, 0, 0)
@@ -92,7 +103,7 @@ class extTello(Tello):
             self.move_forward(20)
             time.sleep(1)
             self.move_up(20)
-            time.sleep(1)
+            time.sleep(2)
         except:
             return
         """
@@ -108,7 +119,8 @@ class extTello(Tello):
 
     def __auto_controller(self):
         func = getattr(self, 'object_identifier', lambda: None)
-        lim = 20
+        lim = 10
+        lt = time.time()
         while self.running:
             target = func()
             if target is None:
@@ -117,12 +129,12 @@ class extTello(Tello):
             #if 'z' not in target:
                 #target['z'] = pos['z']
             pos = self.state
-            dist = self.__distance(pos, target)
+            dist = math.sqrt(target['x'] ** 2 + target['y'] ** 2)
             logging.debug(f"Dist = {dist}")
             #dx = int(target['x'] - pos['x']) if  int(target['x'] - pos['x'])  >= lim else 0
             #dy = int(target['y'] - pos['y']) if  int(target['y'] - pos['y'])  >= lim else 0
-            dx = 20 if  int(target['x'])  >= lim else 0
-            dy = 20 if  int(target['y'])  >= lim else 0
+            dx = int(10*target['x'] /dist) 
+            dy = int(10*target['y'] /dist) 
             logging.debug(f"dx, dy = {dx}, {dy}")
 
                     # If close enough to the target, hold position
@@ -130,9 +142,14 @@ class extTello(Tello):
                 logging.debug("Target reached. Holding position.")
                 self.send_rc_control(0, 0, 0, 0)
             else:
-                self.send_rc_control(dx, dy, 0, 0)
-
+                self.send_rc_control(dy, dx, 0, 0)
+                dt = time.time() - lt
+                with self.lock:
+                    self.state['x'] = self.state['x'] + (dx *dt) / 2 
+                    self.state['y'] = self.state['y'] + (dy *dt) / 2 
+            
             # Add a small delay to reduce loop frequency
+            lt = time.time()
             time.sleep(0.1)
 
 
