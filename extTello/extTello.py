@@ -58,14 +58,21 @@ class extTello(Tello):
             time.sleep(0.1)
 
 
+    def get_sector(self,x, y):
+        cols = 2
+
+        row = int(x // 120)
+        col = int(y // 120)
+
+        return "S" + str(row*col +1)
 
 
     def travel_path(self, wps, max_speed, acc):
         idn = getattr(self, "object_identifier", lambda: None)
         lt = time.time()
         for i in range(len(wps) - 1):
-            start = wps[i]
-            end = wps[i + 1]
+            start = self.state
+            end = wps[i]
             
             # Compute distance and direction to next waypoint
             dist = self.__distance(start, end)
@@ -112,8 +119,6 @@ class extTello(Tello):
         time.sleep(1)
         try:
             self.move_forward(20)
-            time.sleep(1)
-            self.move_up(20)
             time.sleep(2)
         except:
             return
@@ -140,6 +145,8 @@ class extTello(Tello):
             #if 'z' not in target:
                 #target['z'] = pos['z']
             pos = self.state
+            sec = self.get_sector(pos['x'] + target['x'], pos['y'] + target['y'])
+            self.publish_data(str(sec))
             dist = math.sqrt(target['x'] ** 2 + target['y'] ** 2)
             logging.debug(f"Dist = {dist}")
             #dx = int(target['x'] - pos['x']) if  int(target['x'] - pos['x'])  >= lim else 0
