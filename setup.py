@@ -7,6 +7,7 @@ setup(
     install_requires=[
         "djitellopy<=2.5.0",
         "numpy",
+        "rclpy",
     ],
     author="Philip Lundström",
     author_email="philip.lundstrom@live.se",

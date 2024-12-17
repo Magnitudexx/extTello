@@ -12,7 +12,7 @@ drone = extTello()
 drone.connect()
 drone.takeoff_with_state()
 try:
-    drone.go_xyz_speed(0, 30, 0, 20)
+    drone.travel_path([{'x' : 0, 'y' : 0}, {'x' : 120, 'y' : 0}], 20, 4)
 
 finally:
         drone.stop()
